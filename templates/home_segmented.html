@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Selamat Datang</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: url("{{ url_for('static', filename='assets/bg.png') }}") no-repeat center center fixed;
+      background-size: cover;
+      height: 100vh;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .container {
+      color: #eaeaea;
+      padding: 20px 40px;
+      background-color: rgba(255, 255, 255, 0);
+      animation: fadeInUp 1.2s ease-out;
+    }
+
+    .container h1 {
+      font-size: 68px;
+      margin-bottom: -25px;
+      color: #ddd;
+      text-shadow: 2px 2px 7px #000;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards;
+      animation-delay: 0.3s;
+    }
+
+    .container p {
+      font-size: 20px;
+      margin-bottom: 30px;
+      color: #ddd;
+      text-shadow: 2px 2px 7px #000;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards;
+      animation-delay: 0.6s;
+    }
+
+    .start-button {
+      padding: 12px 36px;
+      font-size: 18px;
+      font-weight: 600;
+      background-color: #CA9696;
+      color: #121212;
+      text-decoration: none;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0px 5px 15px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+      animation: fadeIn 1s ease forwards, pulse 1.5s infinite ease-in-out;
+      animation-delay: 0.9s, 1.5s;
+      transform-origin: center;
+    }
+
+    .start-button:hover {
+      background-color: #e6b3b3;
+      transform: translateY(-2px);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.85;
+        box-shadow: 0px 0px 8px rgba(255, 255, 255, 0.2);
+      }
+      50% {
+        transform: scale(1.07);
+        opacity: 1;
+        box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.35);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0.85;
+        box-shadow: 0px 0px 8px rgba(255, 255, 255, 0.2);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Selamat Datang</h1>
+    <p>Mulai Prediksi Hasil Panen?</p>
+    <a href="{{ url_for('predict') }}" class="start-button">Start</a>
+  </div>
+</body>
+</html>
