@@ -34,7 +34,7 @@
         position: fixed;
         top: 20px;
         left: 20px;
-        width: 300px; /* Lebar tetap supaya rapi */
+        width: 300px;
         z-index: 9999;
         background-color: rgba(255, 255, 255, 0.1);
         padding: 16px 20px;
@@ -62,28 +62,6 @@
         align-items: center;
         gap: 20px;
         margin-top: 20px;
-      }
-
-      select {
-        width: 90%;
-        max-width: 300px;
-        padding: 12px;
-        border: none;
-        border-radius: 12px;
-        font-size: 1rem;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        background-image: none;
-
-        text-align-last: center;
-      }
-
-      select:invalid {
-        font-weight: small;
-        font-size: 18;
       }
 
       select,
@@ -117,7 +95,8 @@
         gap: 20px;
       }
 
-      button {
+      button,
+      a.btn-primary {
         padding: 12px 32px;
         border: none;
         border-radius: 12px;
@@ -127,24 +106,11 @@
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         transition: background 0.3s;
-      }
-
-      button:hover {
-        background-color: #a67f6b;
-      }
-
-      a.btn-primary {
-        padding: 12px 32px;
-        border: none;
-        border-radius: 12px;
-        color: white;
-        font-size: 1.1rem;
-        cursor: pointer;
         text-decoration: none;
-        transition: background 0.3s;
         user-select: none;
       }
 
+      button:hover,
       a.btn-primary:hover {
         background-color: #a67f6b;
       }
@@ -170,56 +136,41 @@
     <div class="wrapper">
       <h1>Prediksi Hasil Panen</h1>
 
-      <div
-        class="info-box"
-        style="
-          background-color: rgba(255, 255, 255, 0.1);
-          padding: 16px 20px;
-          border-radius: 12px;
-          margin-bottom: 24px;
-          font-size: 0.95rem;
-          text-align: left;
-          line-height: 1.6;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        "
-      >
+      <div class="info-box">
         <strong>📌 Petunjuk Pengisian:</strong>
         <ul style="padding-left: 20px; margin-top: 10px">
           <li>
             <strong>Negara:</strong> Pilih negara tempat data akan dianalisis.
           </li>
           <li>
-            <strong>Jenis Tanaman:</strong> Pilih komoditas pertanian seperti
-            padi, jagung, dll.
+            <strong>Jenis Tanaman:</strong> Pilih komoditas seperti padi,
+            jagung, dll.
           </li>
           <li>
-            <strong>Tahun:</strong> Masukkan tahun prediksi, contoh:
+            <strong>Tahun:</strong> Masukkan tahun prediksi, misal
             <code>2025</code>.
           </li>
           <li>
-            <strong>Curah Hujan:</strong> Dalam mm, contoh: <code>1234.5</code>.
+            <strong>Curah Hujan:</strong> Dalam mm, misal <code>1234.5</code>.
           </li>
           <li>
-            <strong>Pestisida:</strong> Total penggunaan dalam ton, contoh:
+            <strong>Pestisida:</strong> Total penggunaan (ton), misal
             <code>12.34</code>.
           </li>
           <li>
-            <strong>Suhu Rata-rata:</strong> Dalam °C, contoh:
-            <code>27.5</code>.
+            <strong>Suhu Rata-rata:</strong> Dalam °C, misal <code>27.5</code>.
           </li>
         </ul>
         <p style="margin-top: 12px">
-          Pastikan semua data diisi dengan benar agar prediksi lebih akurat.
+          Pastikan semua data terisi agar hasil lebih akurat.
         </p>
-
-        <button>
-          <a
-            href="{{ url_for('referensi') }}"
-            target="_blank"
-            class="btn btn-primary"
-            >Referensi</a
-          >
-        </button>
+        <a
+          href="{{ url_for('referensi') }}"
+          target="_blank"
+          class="btn-primary"
+        >
+          Referensi
+        </a>
       </div>
 
       <form method="post" action="/predict">
@@ -248,7 +199,6 @@
             <label for="year">Tahun</label>
             <input type="number" name="year" id="year" required />
           </div>
-
           <div class="form-group">
             <label for="rainfall">Curah Hujan</label>
             <input
@@ -259,7 +209,6 @@
               required
             />
           </div>
-
           <div class="form-group">
             <label for="pesticides">Pestisida (Ton)</label>
             <input
@@ -270,7 +219,6 @@
               required
             />
           </div>
-
           <div class="form-group">
             <label for="temp">Suhu Rata-rata</label>
             <input type="number" step="0.01" name="temp" id="temp" required />
@@ -280,11 +228,11 @@
         <button type="submit">Prediksi</button>
       </form>
 
-      {% if rf_result is defined and rf_class is defined %}
+      {% if rf_result is defined and knn_class is defined %}
       <div class="result">
         <h2>Hasil Prediksi</h2>
         <p>🌲 <strong>Random Forest:</strong> {{ rf_result }} hg/ha</p>
-        <p>🏷️ <strong>Kategori:</strong> {{ rf_class | capitalize }}</p>
+        <p>🏷️ <strong>Kategori (KNN):</strong> {{ knn_class | capitalize }}</p>
       </div>
       {% endif %}
     </div>
