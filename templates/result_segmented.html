@@ -280,11 +280,11 @@
         <button type="submit">Prediksi</button>
       </form>
 
-      {% if rf_result is defined and knn_result is defined %}
+      {% if rf_result is defined and rf_class is defined %}
       <div class="result">
         <h2>Hasil Prediksi</h2>
         <p>🌲 <strong>Random Forest:</strong> {{ rf_result }} hg/ha</p>
-        <p>📍 <strong>KNN:</strong> {{ knn_result }} hg/ha</p>
+        <p>🏷️ <strong>Kategori:</strong> {{ rf_class | capitalize }}</p>
       </div>
       {% endif %}
     </div>

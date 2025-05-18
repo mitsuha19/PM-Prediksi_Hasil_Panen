@@ -6,115 +6,121 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.neighbors import KNeighborsRegressor
 import os
 
 app = Flask(__name__)
 
-# Load data
+# 1. Load data
 DATA_PATH = 'data/yield_df.csv'
 df = pd.read_csv(DATA_PATH).drop(columns=['Unnamed: 0'])
 
-# Konfigurasi fitur
-numerical_cols = ['Year', 'average_rain_fall_mm_per_year', 'pesticides_tonnes', 'avg_temp']
+# 2. Definisi fitur
+numerical_cols   = ['Year', 'average_rain_fall_mm_per_year', 'pesticides_tonnes', 'avg_temp']
 categorical_cols = ['Area']
 
-# Direktori untuk menyimpan model
-MODEL_DIR = 'models_per_item'
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# Melatih dan menyimpan model per item jika belum ada
-items = df['Item'].unique()
-for item in items:
-    rf_model_file = os.path.join(MODEL_DIR, f'rf_{item.replace(",", "").replace(" ", "_").lower()}.pkl')
-    knn_model_file = os.path.join(MODEL_DIR, f'knn_{item.replace(",", "").replace(" ", "_").lower()}.pkl')
-
-    if os.path.exists(rf_model_file) and os.path.exists(knn_model_file):
-        continue
-
+# 3. Hitung threshold klasifikasi per item (kuantil 33% & 66%)
+thresholds = {}
+for item in df['Item'].unique():
     df_item = df[df['Item'] == item]
     if len(df_item) < 100:
         continue
+    q1 = df_item['hg/ha_yield'].quantile(0.33)
+    q2 = df_item['hg/ha_yield'].quantile(0.66)
+    thresholds[item] = (q1, q2)
 
-    X = df_item.drop(columns=['hg/ha_yield', 'Item'])
+# 4. Direktori model
+MODEL_DIR = 'models_per_item'
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+# 5. Train & save RF per item (sama seperti sebelumnya)
+for item in thresholds.keys():
+    rf_file = os.path.join(
+    MODEL_DIR,
+    f"rf_{item.replace(',', '').replace(' ', '_').lower()}.pkl"
+    )   
+    if os.path.exists(rf_file):
+        continue
+
+    df_item = df[df['Item'] == item]
+    X = df_item.drop(columns=['hg/ha_yield','Item'])
     y = df_item['hg/ha_yield']
 
     preprocessor = ColumnTransformer([
         ('num', StandardScaler(), numerical_cols),
         ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_cols)
     ])
-
-    # Random Forest pipeline
     rf_pipeline = Pipeline([
-        ('preprocessor', preprocessor),
-        ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
-    ])
-
-    # KNN pipeline
-    knn_pipeline = Pipeline([
-        ('preprocessor', preprocessor),
-        ('regressor', KNeighborsRegressor(n_neighbors=5))
+        ('pre', preprocessor),
+        ('reg', RandomForestRegressor(n_estimators=100, random_state=42))
     ])
 
     X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
     rf_pipeline.fit(X_train, y_train)
-    knn_pipeline.fit(X_train, y_train)
+    joblib.dump(rf_pipeline, rf_file)
 
-    joblib.dump(rf_pipeline, rf_model_file)
-    joblib.dump(knn_pipeline, knn_model_file)
+# 6. Fungsi bantu klasifikasi
+def categorize(item, value):
+    """Kembalikan 'rendah','sedang', atau 'tinggi' berdasarkan thresholds[item]."""
+    low, high = thresholds[item]
+    if value <= low:
+        return 'rendah'
+    elif value <= high:
+        return 'sedang'
+    else:
+        return 'tinggi'
 
-
+# 7. Routes
 @app.route('/')
 def index():
-    item_list = sorted(df['Item'].unique().tolist())
-    area_list = sorted(df['Area'].unique().tolist())
-    return render_template('home_segmented.html', item_list=item_list, area_list=area_list)
+    items = sorted(thresholds.keys())
+    areas = sorted(df['Area'].unique().tolist())
+    return render_template('home_segmented.html', item_list=items, area_list=areas)
 
-
-@app.route('/predict', methods=['GET', 'POST'])
+@app.route('/predict', methods=['GET','POST'])
 def predict():
-    item_list = sorted(df['Item'].unique().tolist())
-    area_list = sorted(df['Area'].unique().tolist())
+    items = sorted(thresholds.keys())
+    areas = sorted(df['Area'].unique().tolist())
 
     if request.method == 'POST':
-        area = request.form['area']
-        item = request.form['item']
-        year = int(request.form['year'])
-        rainfall = float(request.form['rainfall'])
-        pesticides = float(request.form['pesticides'])
-        temp = float(request.form['temp'])
+        # ambil input
+        item     = request.form['item']
+        area     = request.form['area']
+        year     = int(request.form['year'])
+        rain     = float(request.form['rainfall'])
+        pest     = float(request.form['pesticides'])
+        temp     = float(request.form['temp'])
 
+        # buat DataFrame untuk prediksi
         input_df = pd.DataFrame([{
             'Area': area,
             'Year': year,
-            'average_rain_fall_mm_per_year': rainfall,
-            'pesticides_tonnes': pesticides,
+            'average_rain_fall_mm_per_year': rain,
+            'pesticides_tonnes': pest,
             'avg_temp': temp
         }])
 
-        rf_model_file = os.path.join(MODEL_DIR, f'rf_{item.replace(",", "").replace(" ", "_").lower()}.pkl')
-        knn_model_file = os.path.join(MODEL_DIR, f'knn_{item.replace(",", "").replace(" ", "_").lower()}.pkl')
+        # muat model RF
+        rf_file = os.path.join(
+            MODEL_DIR,
+            f"rf_{item.replace(',', '').replace(' ', '_').lower()}.pkl"
+        )
+        rf_model = joblib.load(rf_file)
 
-        if not os.path.exists(rf_model_file) or not os.path.exists(knn_model_file):
-            return f"Model untuk item '{item}' belum tersedia."
-
-        rf_model = joblib.load(rf_model_file)
-        knn_model = joblib.load(knn_model_file)
-
-        rf_prediction = rf_model.predict(input_df)[0]
-        knn_prediction = knn_model.predict(input_df)[0]
+        # prediksi kontinyu
+        rf_pred = rf_model.predict(input_df)[0]
+        rf_cat  = categorize(item, rf_pred)
 
         return render_template('result_segmented.html',
-                               rf_result=round(rf_prediction, 2),
-                               knn_result=round(knn_prediction, 2),
                                item=item,
-                               area_list=area_list,
-                               item_list=item_list)
+                               rf_result=round(rf_pred,2),
+                               rf_class=rf_cat,
+                               area_list=areas,
+                               item_list=items)
 
-    # Jika GET: tampilkan form kosong
+    # GET → form kosong
     return render_template('result_segmented.html',
-                           area_list=area_list,
-                           item_list=item_list)
+                           area_list=areas,
+                           item_list=items)
 
 @app.route('/referensi')
 def referensi():
